@@ -1,0 +1,42 @@
+// ==============================================================
+// ESPEasy Rules: Taupunktlüftung & ThingSpeak Telemetrie
+// ==============================================================
+// Projekt: Autonome, taupunktgesteuerte Entfeuchtung & Lüftung
+// Hardware: ESP8266 / ESP32 mit Relais an GPIO 2
+// Tasks:
+//   Task 1: Sensor "Innen"  (Values: Temperature, Humidity)
+//   Task 2: Sensor "Aussen" (Values: Temperature, Humidity)
+//   Task 3: Dummy "Taupunkt" (Values: Aussen, Innen)
+// ==============================================================
+
+on System#Boot do
+  // Relais beim Start definiert ausschalten
+  // (Bei Low-aktiven Relaismodulen ggf. GPIO,2,1 nutzen)
+  GPIO,2,0
+  Let,1,0
+endon
+
+On Innen#Humidity Do
+  // 1. Taupunkte für Außen und Innen berechnen (%c_dew_th%)
+  // Speichern im Dummy Device (Task 3: Value 1 = Aussen, Value 2 = Innen)
+  TaskValueSet,3,1,%c_dew_th%([Aussen#Temperature],[Aussen#Humidity])
+  TaskValueSet,3,2,%c_dew_th%([Innen#Temperature],[Innen#Humidity])
+
+  // 2. Taupunktdifferenz berechnen (Innen minus Außen)
+  // Ist VAR#2 > 0, ist die Außenluft absolut trockener als die Raumluft
+  Let,2,[Taupunkt#Innen]-[Taupunkt#Aussen]
+
+  // 3. Intelligente Schalthysterese:
+  // Lüfter schalten: Nur wenn Innenfeuchte > 50 % UND Taupunktdifferenz > 2 °C
+  if [Innen#Humidity] > 50 and [VAR#2] > 2
+    GPIO,2,1
+    Let,1,1
+  else
+    GPIO,2,0
+    Let,1,0
+  endif
+
+  // 4. Telemetriedaten an ThingSpeak übertragen
+  // HINWEIS: Bitte 'YOUR_THINGSPEAK_WRITE_API_KEY' durch deinen eigenen Write API Key ersetzen!
+  SendToHTTP api.thingspeak.com,80,"/update?api_key=YOUR_THINGSPEAK_WRITE_API_KEY&field2=[Aussen#Temperature]&field3=[Aussen#Humidity]&field4=[Innen#Temperature]&field5=[Innen#Humidity]&field6=[VAR#1]&field7=[Taupunkt#Aussen]&field8=[Taupunkt#Innen]"
+endon
