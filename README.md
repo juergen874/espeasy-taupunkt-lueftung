@@ -1,3 +1,91 @@
+<p align="center">
+  <b><a href="#-english">🇬🇧 English</a></b> &nbsp;•&nbsp; <b><a href="#-deutsch">🇩🇪 Deutsch</a></b>
+</p>
+
+---
+
+<a name="-english"></a>
+# ESPEasy Dew Point Ventilation Control (Basement & Garage)
+
+A smart, fully localized, and offline-capable ventilation control system based on **ESPEasy** and an **ESP8266 / ESP32**, specifically designed to effectively dehumidify basements and garages without the risk of condensation and mold. 
+It uses physically exact **dew point calculation** to strictly ventilate only when the outside air is genuinely drier than the inside air. The telemetry data is sent via an efficient HTTP GET interface directly to a **ThingSpeak IoT Dashboard**.
+
+---
+
+## 🛑 The Problem: The "Summer Condensation" Trap
+
+Many people intuitively try to ventilate their cool basements on warm summer days. This is a fatal mistake that directly leads to mold:
+
+* Warm air can store exponentially more water vapor than cold air.
+* At **30 °C and 45% rel. humidity**, outside air contains approx. **$13.7\text{ g/m}^3$** of water (dew point approx. 16.8 °C).
+* A cool basement room might have **16 °C and 75% rel. humidity**, which represents only about **$10.2\text{ g/m}^3$** of water (dew point approx. 11.5 °C).
+* **The consequence of wrong ventilation:** When the supposedly "dry" 45% outside air flows into the 16 °C cold basement, it cools down. Since its saturation capacity drops, the relative humidity shoots up to **100%** on the cold basement walls. Water condenses natively on the walls – the basement "sweats" and acute mold danger arises!
+
+### The Solution: The Dew Point
+The **Dew Point** indicates the temperature to which air would have to be cooled down for the contained moisture to precipitate as dew/condensation. It is a direct measure for the **absolute water content** of the air:
+* **Outside Dew Point < Inside Dew Point**: The outside air is absolutely drier than the inside air. **Ventilation dehumidifies the room.**
+* **Outside Dew Point ≥ Inside Dew Point**: Ventilation would add extra moisture to the room. **Fan stays OFF.**
+
+---
+
+## 🚀 Advantages of ESPEasy
+
+[ESPEasy](https://github.com/letscontrolit/ESPEasy) is a highly flexible open-source firmware for ESP8266 and ESP32 modules:
+
+1. **No coding required (No-Code / Low-Code):** Everything configured comfortably via the web interface.
+2. **Built-in dew point calculation:** ESPEasy offers native system functions like `%c_dew_th%(Temperature, Humidity)`.
+3. **Maximum reliability & autonomy:** The logic runs **completely locally and offline**.
+4. **Huge sensor ecosystem:** Plug-and-play support for BME280, SHT3x, DHT22, etc.
+5. **Powerful Rules Engine:** Event-based triggers, timers, hysteresis, and direct GPIO controls.
+
+---
+
+## 🛠️ Step-by-Step Installation
+
+### 1. Configure ESPEasy Tasks (Devices)
+
+Create three tasks in the ESPEasy web interface under **Devices**:
+* **Task 1 (Inside):** device (e.g. BME280), name `Innen`, values `Temperature`, `Humidity`.
+* **Task 2 (Outside):** device (e.g. BME280), name `Aussen`, values `Temperature`, `Humidity`.
+* **Task 3 (Dummy Device for Dew points):** Generic - Dummy Device, name `Taupunkt`, values `Aussen`, `Innen`.
+
+### 2. Add Rules Code
+
+Enable Rules under **Tools** -> **Advanced**. Paste the following code into the **Rules 1** tab:
+
+```text
+on System#Boot do
+  GPIO,2,0
+  Let,1,0
+endon
+
+On Innen#Humidity Do
+  // 1. Calculate dew points (%c_dew_th%)
+  TaskValueSet,3,1,%c_dew_th%([Aussen#Temperature],[Aussen#Humidity])
+  TaskValueSet,3,2,%c_dew_th%([Innen#Temperature],[Innen#Humidity])
+
+  // 2. Calculate dew point difference
+  Let,2,[Taupunkt#Innen]-[Taupunkt#Aussen]
+
+  // 3. Smart hysteresis (humidity > 50% AND dew point diff > 2°C)
+  if [Innen#Humidity] > 50 and [VAR#2] > 2
+    GPIO,2,1
+    Let,1,1
+  else
+    GPIO,2,0
+    Let,1,0
+  endif
+
+  // 4. Send telemetry data to ThingSpeak
+  SendToHTTP api.thingspeak.com,80,"/update?api_key=YOUR_THINGSPEAK_WRITE_API_KEY&field2=[Aussen#Temperature]&field3=[Aussen#Humidity]&field4=[Innen#Temperature]&field5=[Innen#Humidity]&field6=[VAR#1]&field7=[Taupunkt#Aussen]&field8=[Taupunkt#Innen]"
+endon
+```
+> [!IMPORTANT]
+> Replace `YOUR_THINGSPEAK_WRITE_API_KEY` with your actual ThingSpeak API Key!
+
+---
+
+<a name="-deutsch"></a>
 # 🌬️ ESPEasy Taupunktlüftung & ThingSpeak Cloud-Monitoring
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
