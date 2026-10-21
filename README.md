@@ -57,6 +57,36 @@ The **Dew Point** indicates the temperature to which air would have to be cooled
 
 ---
 
+## 🔌 Hardware & Pinout
+
+### Wiring / Pinout (Example: Wemos D1 Mini)
+
+| D1 Mini Pin | ESP8266 GPIO | Target Module | Module Pin | Function |
+| :--- | :--- | :--- | :--- | :--- |
+| **3V3** | 3.3V | BME280 / SHT31 (Indoor & Outdoor) | **VCC / VIN** | 3.3V power supply for sensors |
+| **GND** | GND | All Modules (Sensors & Relay) | **GND** | Common ground |
+| **D1** | **GPIO 5** | BME280 / SHT31 (Indoor & Outdoor) | **SCL** | I2C Clock line |
+| **D2** | **GPIO 4** | BME280 / SHT31 (Indoor & Outdoor) | **SDA** | I2C Data line |
+| **D4** | **GPIO 2** | Relay Module / SSR | **IN** | Control signal for fan relay (`1` = ON, `0` = OFF) |
+| **5V / VBUS** | 5.0V | Relay Module | **VCC** | 5V power supply for relay coil |
+
+### Alternative: ESP32 NodeMCU
+
+| ESP32 Pin | GPIO | Target Module | Module Pin | Function |
+| :--- | :--- | :--- | :--- | :--- |
+| **3V3** | 3.3V | Sensors (Indoor & Outdoor) | **VCC** | 3.3V sensor supply |
+| **GND** | GND | All Modules | **GND** | Common ground |
+| **D22** | **GPIO 22** | Sensors (Indoor & Outdoor) | **SCL** | Default I2C Clock |
+| **D21** | **GPIO 21** | Sensors (Indoor & Outdoor) | **SDA** | Default I2C Data |
+| **D2** | **GPIO 2** | Relay Module | **IN** | Relay control signal (matches Rules code) |
+| **VIN / 5V** | 5.0V | Relay Module | **VCC** | 5V relay supply |
+
+> [!TIP]
+> **Two BME280 Sensors on the Same I2C Bus:**  
+> By default, the BME280 uses I2C address `0x76`. Connect the **SDO** pin of the second (outdoor) sensor to **3.3V** (or bridge the solder pad) to change its address to `0x77`. Alternatively, an **SHT31** sensor (address `0x44`) can be used for the outdoor reading.
+
+---
+
 ## 🛠️ Step-by-Step Installation
 
 ### 1. Configure ESPEasy Tasks (Devices)
