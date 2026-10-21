@@ -40,6 +40,23 @@ The **Dew Point** indicates the temperature to which air would have to be cooled
 
 ---
 
+## 📦 Bill of Materials (BOM)
+
+| Category | Component | Recommended Model | Description / Purpose | Approx. Cost |
+| :--- | :--- | :--- | :--- | :---: |
+| **Microcontroller** | ESP8266 or ESP32 | Wemos D1 Mini / NodeMCU ESP32 | Runs ESPEasy firmware, calculates dew point, controls relay | 3 – 6 € |
+| **Inside Sensor** | Temp & Humidity Sensor | Bosch BME280 (I2C) or Sensirion SHT31 | Precision sensor inside the basement / garage | 4 – 8 € |
+| **Outside Sensor** | Temp & Humidity Sensor | Bosch BME280 (I2C) or SHT31 | Measures outdoor air (requires weather/radiation shield) | 4 – 8 € |
+| **Actuator** | Relay Module | 5V 1-Channel Relay with Optocoupler or SSR-25DA | Safely switches the 230V fan on GPIO 2 | 2 – 6 € |
+| **Fan** | Inline Duct Fan / Extractor | 100 mm / 125 mm Inline Fan (230V AC or 12V DC PWM) | Exhausts moist air to the outside (~100–180 m³/h) | 15 – 45 € |
+| **Backdraft Damper** | Shutter Flap | 100 mm / 125 mm gravity / spring backdraft damper | Prevents backflow of cold/humid outside air when idle | 5 – 10 € |
+| **Power Supply** | 5V DC Power Adapter | 5V / 2A Micro-USB / USB-C adapter or DIN rail PSU | Stable 24/7 power supply for ESP and sensors | 5 – 12 € |
+| **Wiring & Housing** | Enclosure & Cable | IP65 Junction Box, Cat5/6/7 cable, WAGO 221 | Safe installation and reliable connection to outdoor sensor | 5 – 15 € |
+| *(Optional)* | Status Display | 0.96" I2C OLED (SSD1306) | Local display of temperatures, humidity & dew points | 3 – 5 € |
+| *(Optional)* | Manual Override | 3-way switch (ON - OFF - AUTO) | Manual control for maintenance or continuous air | 2 – 4 € |
+
+---
+
 ## 🛠️ Step-by-Step Installation
 
 ### 1. Configure ESPEasy Tasks (Devices)
@@ -107,6 +124,7 @@ Das System berechnet kontinuierlich den **Taupunkt** für Innen- und Außenberei
 - [Vorteile von ThingSpeak](#-vorteile-von-thingspeak)
 - [Funktionsweise der Steuerung](#-funktionsweise-der-steuerung)
 - [Hardware & Anschlüsse](#-hardware--anschlüsse)
+- [Materialliste (BOM / Einkaufsliste)](#-materialliste-bom--einkaufsliste)
 - [Schritt-für-Schritt Installation](#-schritt-für-schritt-installation)
   - [1. ESPEasy Tasks (Geräte) konfigurieren](#1-espeasy-tasks-geräte-konfigurieren)
   - [2. Rules-Code hinterlegen](#2-rules-code-hinterlegen)
@@ -191,12 +209,59 @@ Der **Taupunkt (Dew Point)** gibt an, auf welche Temperatur Luft abgekühlt werd
 
 ## 🔌 Hardware & Anschlüsse
 
-| Komponente | Empfehlung | Funktion |
-| :--- | :--- | :--- |
-| **Mikrocontroller** | Wemos D1 Mini (ESP8266) oder NodeMCU ESP32 | Zentrale Steuereinheit |
-| **Sensor Innen** | BME280 / SHT31 / DHT22 | Temperatur & rel. Feuchte Innen |
-| **Sensor Außen** | BME280 (geschützt) / SHT31 / Funk-Außensensor | Temperatur & rel. Feuchte Außen |
-| **Aktor** | 5V Relais-Modul oder Solid State Relais (SSR) an **GPIO 2** | Schaltet 230V-Lüfter / Ventilator |
+### Anschluss- & Pinbelegung (am Beispiel Wemos D1 Mini)
+
+| D1 Mini Pin | GPIO | Komponente | Beschreibung |
+| :--- | :--- | :--- | :--- |
+| **3V3** | 3.3V | VCC BME280 / SHT31 | Versorgungsspannung der Sensoren (3,3 V) |
+| **GND** | GND | GND aller Module | Gemeinsame Masse |
+| **D1** | GPIO 5 | SCL (I2C Clock) | Taktleitung für Innen- und Außensensor |
+| **D2** | GPIO 4 | SDA (I2C Data) | Datenleitung für Innen- und Außensensor |
+| **D4** | GPIO 2 | IN (Relais-Signal) | Steuersignal für Relaismodul / SSR (High = Ein) |
+| **5V / VBUS**| 5.0V | VCC Relaismodul | Versorgungsspannung für Relaisspule (5 V) |
+
+> [!TIP]
+> **Zwei BME280 Sensoren am selben I2C-Bus:**  
+> Standardmäßig belegt der BME280 die I2C-Adresse `0x76`. Bei einem der beiden Sensoren (z. B. dem Außensensor) verbindet man den Pin **SDO** mit **3.3V** (oder setzt die entsprechende Lötbrücke), um dessen Adresse auf `0x77` umzustellen. Alternativ kann als zweiter Sensor ein **SHT31** (Adresse `0x44`) verwendet werden.
+
+---
+
+## 📦 Materialliste (BOM / Einkaufsliste)
+
+Für den Aufbau der automatischen Taupunktlüftung wird folgende Hardware benötigt:
+
+### 1. Steuerung & Elektronik
+| Bauteil | Empfehlung / Spezifikation | Stückzahl | Zweck | Richtpreis |
+| :--- | :--- | :---: | :--- | :---: |
+| **Mikrocontroller** | Wemos D1 Mini (ESP8266) oder NodeMCU ESP32 | 1 | Führt ESPEasy autark aus, liest Sensoren und schaltet Relais | 3 – 6 € |
+| **Relais-Modul** | 5V 1-Kanal Relais mit Optokoppler (z. B. Songle) oder Solid-State-Relais (SSR-25DA) | 1 | Schaltet den 230V Lüfter potentialfrei und sicher | 2 – 6 € |
+| **Netzteil** | 5V / 2A Micro-USB / USB-C Netzteil oder MeanWell HDR-15-5 Hutschienennetzteil | 1 | Stabile, langlebige Spannungsversorgung im 24/7 Dauerbetrieb | 5 – 12 € |
+
+### 2. Sensorik
+| Bauteil | Empfehlung / Spezifikation | Stückzahl | Zweck | Richtpreis |
+| :--- | :--- | :---: | :--- | :---: |
+| **Sensor Innen** | Bosch BME280 (I2C) oder Sensirion SHT31 | 1 | Exakte Erfassung von Raumtemperatur und relativer Luftfeuchte | 4 – 8 € |
+| **Sensor Außen** | Bosch BME280 (I2C) oder Sensirion SHT31 / SHT35 | 1 | Exakte Erfassung von Außentemperatur und relativer Luftfeuchte | 4 – 8 € |
+| **Wetterschutz Außen** | Lamellengehäuse (Strahlungsschutz) oder Schutzhülse (IP-Membran) | 1 | Schützt den Außensensor vor direkter Sonneneinstrahlung und Regen | 5 – 12 € |
+
+### 3. Lüftungstechnik & Mechanik
+| Bauteil | Empfehlung / Spezifikation | Stückzahl | Zweck | Richtpreis |
+| :--- | :--- | :---: | :--- | :---: |
+| **Lüfter / Ventilator** | 230V Rohrventilator (100 mm oder 125 mm) z. B. Blauberg / Rohreinschublüfter | 1 | Förderleistung ca. 100–180 m³/h für zügigen Luftaustausch | 20 – 50 € |
+| **Rückstauklappe** | Mechanische Schwerkraft- oder Federrückschlagklappe (100/125 mm) | 1 | Verhindert unkontrolliertes Zurückströmen kalter/feuchter Luft bei Stillstand | 5 – 10 € |
+| **Lüftungsrohr & Gitter** | Wickelfalzrohr / Aluflexrohr + Außengitter mit Insektenschutznetz | 1 Set | Wanddurchführung und saubere Luftführung | 10 – 20 € |
+
+### 4. Installationsmaterial & Zubehör
+| Bauteil | Empfehlung / Spezifikation | Zweck | Richtpreis |
+| :--- | :--- | :--- | :---: |
+| **Verteilergehäuse** | Abzweigdose IP65 / Feuchtraumgehäuse | Berührungssichere und feuchtigkeitsgeschützte Unterbringung der 230V- und 5V-Elektronik | 4 – 8 € |
+| **Sensorleitung Außen** | Geschirmtes 4-adriges Kabel (z. B. Cat.5/6/7 Verlegekabel oder J-Y(St)Y 2x2x0.8) | Zuverlässige I2C-Verbindung zum Außensensor (auch über 3–10 m) | 3 – 8 € |
+| **Klemmen & Kabel** | WAGO 221 Hebelklemmen, Jumper-Kabel, Schrumpfschlauch | Schnelle, wartungsfreie und berührungssichere Verdrahtung | 3 – 6 € |
+
+### 5. Optionale Komfort-Erweiterungen
+* 📺 **0.96" I2C OLED-Display (SSD1306)** (~3–5 €): Direkte Anzeige von Innen-/Außentemperatur, Luftfeuchte, Taupunkten und Lüfterstatus vor Ort.
+* 🎛️ **3-Stufen-Schalter (Auto / Aus / Handbetrieb)** (~2–4 €): Manueller Not- oder Dauerbetrieb ohne Webinterface.
+* 💡 **Status-LED (5V mit Vorwiderstand 330 Ω)** (~1 €): Optische Betriebsanzeige direkt an der Gehäusefront.
 
 ---
 
